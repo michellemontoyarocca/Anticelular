@@ -1,0 +1,509 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Modo Anti-Celular</title>
+
+  <style>
+    :root{
+      --bg:#0b0f17;
+      --card:#111827;
+      --card2:#0f172a;
+      --text:#e5e7eb;
+      --muted:#9ca3af;
+      --good:#22c55e;
+      --warn:#f97316;
+      --bad:#ef4444;
+      --stroke:#22c55e;
+      --strokeBad:#ef4444;
+    }
+
+    *{ box-sizing:border-box; }
+    html{ background:#0b0f17; }
+    body{
+      margin:0;
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+      background: radial-gradient(1000px 600px at 20% 10%, #122045 0%, var(--bg) 55%) fixed;
+      color:var(--text);
+      min-height:100vh;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      padding:18px;
+    }
+
+    .app{
+      width:min(1100px, 100%);
+      display:grid;
+      grid-template-columns: 1.5fr 1fr;
+      gap:16px;
+    }
+
+    @media (max-width: 900px){
+      .app{ grid-template-columns: 1fr; }
+    }
+
+    .card{
+      background: linear-gradient(180deg, rgba(255,255,255,0.06), rgba(255,255,255,0.03));
+      border: 1px solid rgba(255,255,255,0.10);
+      border-radius: 18px;
+      box-shadow: 0 15px 50px rgba(0,0,0,.35);
+      overflow:hidden;
+    }
+
+    .header{
+      padding:16px 16px 0;
+      display:flex;
+      align-items:flex-start;
+      justify-content:space-between;
+      gap:12px;
+    }
+    .title{
+      font-weight:800;
+      letter-spacing:.2px;
+      font-size:18px;
+      line-height:1.2;
+    }
+    .subtitle{
+      color:var(--muted);
+      font-size:13px;
+      margin-top:6px;
+      line-height:1.35;
+    }
+    .pill{
+      display:inline-flex;
+      align-items:center;
+      gap:8px;
+      padding:8px 10px;
+      border-radius:999px;
+      background: rgba(255,255,255,0.08);
+      border:1px solid rgba(255,255,255,0.10);
+      font-size:12px;
+      color:var(--muted);
+      user-select:none;
+      white-space:nowrap;
+    }
+    .dot{
+      width:9px; height:9px; border-radius:50%;
+      background: var(--bad);
+      box-shadow: 0 0 0 4px rgba(239,68,68,.15);
+    }
+    .dot.good{
+      background: var(--good);
+      box-shadow: 0 0 0 4px rgba(34,197,94,.15);
+    }
+    .dot.warn{
+      background: var(--warn);
+      box-shadow: 0 0 0 4px rgba(249,115,22,.15);
+    }
+
+    /* VIDEO AREA */
+    .videoWrap{
+      position:relative;
+      width:100%;
+      aspect-ratio: 16/9;
+      background: linear-gradient(180deg, rgba(17,24,39,.8), rgba(15,23,42,.8));
+      border-top:1px solid rgba(255,255,255,0.10);
+      margin-top:14px;
+    }
+    video, canvas{
+      position:absolute;
+      inset:0;
+      width:100%;
+      height:100%;
+      object-fit: cover;
+    }
+    .hud{
+      position:absolute;
+      left:12px;
+      bottom:12px;
+      display:flex;
+      gap:10px;
+      flex-wrap:wrap;
+      z-index:5;
+    }
+    .hudChip{
+      padding:8px 10px;
+      border-radius:12px;
+      background: rgba(0,0,0,0.45);
+      border:1px solid rgba(255,255,255,0.15);
+      backdrop-filter: blur(8px);
+      font-size:12px;
+      color: #e5e7eb;
+    }
+
+    /* ALERT OVERLAY */
+    .alert{
+      display:none;
+      position:absolute;
+      inset:0;
+      z-index:10;
+      align-items:center;
+      justify-content:center;
+      background: rgba(0,0,0,0.55);
+      backdrop-filter: blur(3px);
+      text-align:center;
+      padding:18px;
+    }
+    .alertBox{
+      max-width:520px;
+      width:100%;
+      border-radius:18px;
+      padding:18px;
+      background: linear-gradient(180deg, rgba(239,68,68,0.20), rgba(0,0,0,0.45));
+      border:1px solid rgba(239,68,68,0.35);
+      box-shadow: 0 20px 80px rgba(0,0,0,.45);
+    }
+    .alertBox h2{
+      margin:0;
+      font-size:22px;
+      letter-spacing:.2px;
+    }
+    .alertBox p{
+      margin:10px 0 0;
+      color: rgba(229,231,235,0.9);
+      font-size:13px;
+      line-height:1.4;
+    }
+
+    /* RIGHT PANEL */
+    .panelBody{ padding:16px; }
+    .grid{
+      display:grid;
+      gap:12px;
+    }
+    .row{
+      display:flex;
+      gap:10px;
+      align-items:center;
+      flex-wrap:wrap;
+    }
+    .btn{
+      appearance:none;
+      border:none;
+      border-radius:14px;
+      padding:10px 12px;
+      font-weight:700;
+      cursor:pointer;
+      color:var(--text);
+      background: rgba(255,255,255,0.10);
+      border:1px solid rgba(255,255,255,0.14);
+      transition: transform .05s ease, background .2s ease;
+    }
+    .btn:hover{ background: rgba(255,255,255,0.14); }
+    .btn:active{ transform: translateY(1px); }
+
+    .btn.primary{
+      background: linear-gradient(180deg, rgba(34,197,94,0.25), rgba(34,197,94,0.10));
+      border:1px solid rgba(34,197,94,0.35);
+    }
+    .btn.danger{
+      background: linear-gradient(180deg, rgba(239,68,68,0.25), rgba(239,68,68,0.10));
+      border:1px solid rgba(239,68,68,0.35);
+    }
+
+    .label{
+      font-size:12px;
+      color:var(--muted);
+      margin-bottom:6px;
+    }
+    .control{
+      background: rgba(0,0,0,0.25);
+      border:1px solid rgba(255,255,255,0.10);
+      border-radius:16px;
+      padding:12px;
+    }
+    input[type="range"]{ width:100%; }
+    .small{
+      font-size:12px;
+      color: var(--muted);
+      line-height:1.4;
+    }
+
+    .log{
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+      font-size:12px;
+      padding:10px;
+      border-radius:14px;
+      background: rgba(0,0,0,0.35);
+      border:1px solid rgba(255,255,255,0.10);
+      color: #d1d5db;
+      min-height:70px;
+      white-space:pre-wrap;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="app">
+    <!-- LEFT: CAMERA + BOXES -->
+    <section class="card">
+      <div class="header">
+        <div>
+          <div class="title">Modo Anti-Celular</div>
+          <div class="subtitle">Detecta "cell phone" en cámara y bloquea con advertencia hasta que lo bajes.</div>
+        </div>
+        <div class="pill"><span id="dot" class="dot"></span><span id="stateText">Inactivo</span></div>
+      </div>
+
+      <div class="videoWrap">
+        <video id="video" autoplay playsinline muted></video>
+        <canvas id="canvas"></canvas>
+
+        <div class="hud">
+          <div class="hudChip" id="hudFps">FPS: —</div>
+          <div class="hudChip" id="hudPhones">Teléfonos: —</div>
+          <div class="hudChip" id="hudThresh">Umbral: 0.60</div>
+        </div>
+
+        <div class="alert" id="alert">
+          <div class="alertBox">
+            <h2>⚠️ Baja el celular</h2>
+            <p>Se detectó un teléfono dentro del encuadre. La advertencia se quitará cuando ya no aparezca.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- RIGHT: CONTROLS -->
+    <aside class="card">
+      <div class="header">
+        <div>
+          <div class="title">Controles</div>
+          <div class="subtitle">Ajusta sensibilidad y controla el detector.</div>
+        </div>
+        <div class="pill">TF.js + COCO-SSD</div>
+      </div>
+
+      <div class="panelBody">
+        <div class="grid">
+          <div class="row">
+            <button id="btnStart" class="btn primary">Iniciar</button>
+            <button id="btnStop" class="btn danger" disabled>Detener</button>
+          </div>
+
+          <div class="control">
+            <div class="label">Umbral de confianza (más alto = más estricto)</div>
+            <input id="thresh" type="range" min="0.30" max="0.90" step="0.05" value="0.60" />
+            <div class="small">Actual: <span id="threshVal">0.60</span></div>
+          </div>
+
+          <div class="control">
+            <div class="label">Frecuencia de detección</div>
+            <div class="small">
+              Se usa un loop continuo, pero el dibujo se actualiza suave.
+              Si tu PC se pone lenta, sube el umbral o reduce el tamaño del video (opcional).
+            </div>
+          </div>
+
+          <div>
+            <div class="label">Log</div>
+            <div id="log" class="log">Listo.</div>
+          </div>
+
+          <div class="small">
+            Nota: solo se detecta el celular si está visible en cámara (porque el detector "ve" pixeles).
+          </div>
+        </div>
+      </div>
+    </aside>
+  </div>
+
+  <!-- Modelos -->
+  <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.20.0/dist/tf.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/coco-ssd@2.2.3/dist/coco-ssd.min.js"></script>
+
+  <script>
+    const video = document.getElementById('video');
+    const canvas = document.getElementById('canvas');
+    const ctx = canvas.getContext('2d');
+
+    const btnStart = document.getElementById('btnStart');
+    const btnStop = document.getElementById('btnStop');
+
+    const dot = document.getElementById('dot');
+    const stateText = document.getElementById('stateText');
+    const alertEl = document.getElementById('alert');
+
+    const hudFps = document.getElementById('hudFps');
+    const hudPhones = document.getElementById('hudPhones');
+    const hudThresh = document.getElementById('hudThresh');
+
+    const thresh = document.getElementById('thresh');
+    const threshVal = document.getElementById('threshVal');
+
+    const logEl = document.getElementById('log');
+
+    let model = null;
+    let running = false;
+    let stream = null;
+
+    // Para FPS aproximado
+    let lastFpsT = performance.now();
+    let frames = 0;
+
+    // Config
+    let CONF = parseFloat(thresh.value);
+
+    function log(msg){
+      const t = new Date().toLocaleTimeString();
+      logEl.textContent = `[${t}] ${msg}\n` + logEl.textContent.slice(0, 500);
+    }
+
+    function setState(kind, text){
+      stateText.textContent = text;
+      dot.className = 'dot' + (kind ? (' ' + kind) : '');
+    }
+
+    function setAlert(on){
+      alertEl.style.display = on ? 'flex' : 'none';
+    }
+
+    function resizeCanvasToVideo(){
+      // Sincroniza el canvas a las dimensiones reales del video
+      const vw = video.videoWidth;
+      const vh = video.videoHeight;
+      if (!vw || !vh) return;
+
+      if (canvas.width !== vw) canvas.width = vw;
+      if (canvas.height !== vh) canvas.height = vh;
+    }
+
+    function drawBoxes(preds){
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      // Estilo de líneas
+      ctx.lineWidth = Math.max(2, Math.floor(canvas.width / 300));
+      ctx.font = `${Math.max(14, Math.floor(canvas.width / 45))}px system-ui`;
+
+      for (const p of preds){
+        const [x, y, w, h] = p.bbox;
+        const score = Math.round(p.score * 100);
+
+        const isPhone = (p.class === 'cell phone') && (p.score >= CONF);
+
+        // Color según tipo
+        ctx.strokeStyle = isPhone ? '#ef4444' : '#22c55e';
+        ctx.fillStyle   = isPhone ? 'rgba(239,68,68,0.18)' : 'rgba(34,197,94,0.12)';
+
+        // Caja
+        ctx.fillRect(x, y, w, h);
+        ctx.strokeRect(x, y, w, h);
+
+        // Etiqueta
+        const label = `${p.class} ${score}%`;
+        const pad = 6;
+        const textW = ctx.measureText(label).width;
+        const boxH = Math.max(22, Math.floor(canvas.width / 40));
+
+        const lx = x;
+        const ly = Math.max(0, y - boxH);
+
+        ctx.fillStyle = isPhone ? 'rgba(239,68,68,0.85)' : 'rgba(34,197,94,0.85)';
+        ctx.fillRect(lx, ly, textW + pad * 2, boxH);
+
+        ctx.fillStyle = '#0b0f17';
+        ctx.fillText(label, lx + pad, ly + Math.floor(boxH * 0.72));
+      }
+    }
+
+    async function startCamera(){
+      // Cámara frontal si existe (ideal para "verme")
+      stream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: "user" },
+        audio: false
+      });
+      video.srcObject = stream;
+      await new Promise(r => video.onloadedmetadata = r);
+      resizeCanvasToVideo();
+      log("Cámara iniciada.");
+    }
+
+    async function stopAll(){
+      running = false;
+      setAlert(false);
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      if (stream){
+        for (const track of stream.getTracks()) track.stop();
+        stream = null;
+      }
+      video.srcObject = null;
+
+      btnStart.disabled = false;
+      btnStop.disabled = true;
+
+      setState('', 'Inactivo');
+      hudPhones.textContent = 'Teléfonos: —';
+      hudFps.textContent = 'FPS: —';
+      log("Detenido.");
+    }
+
+    async function loop(){
+      if (!running) return;
+
+      // Ajuste canvas por si cambia el tamaño
+      resizeCanvasToVideo();
+
+      const preds = await model.detect(video);
+
+      // Filtra teléfonos por umbral
+      const phones = preds.filter(p => p.class === 'cell phone' && p.score >= CONF);
+      const hasPhone = phones.length > 0;
+
+      // UI
+      setAlert(hasPhone);
+      hudPhones.textContent = `Teléfonos: ${phones.length}`;
+      setState(hasPhone ? '' : 'good', hasPhone ? 'Teléfono detectado' : 'OK');
+
+      // Dibujo (muestra todos; teléfono en rojo, otros en verde)
+      drawBoxes(preds);
+
+      // FPS aprox
+      frames++;
+      const now = performance.now();
+      if (now - lastFpsT >= 1000){
+        hudFps.textContent = `FPS: ${frames}`;
+        frames = 0;
+        lastFpsT = now;
+      }
+
+      // loop
+      requestAnimationFrame(loop);
+    }
+
+    // Control de umbral
+    thresh.addEventListener('input', () => {
+      CONF = parseFloat(thresh.value);
+      threshVal.textContent = CONF.toFixed(2);
+      hudThresh.textContent = `Umbral: ${CONF.toFixed(2)}`;
+    });
+
+    btnStart.addEventListener('click', async () => {
+      try{
+        btnStart.disabled = true;
+        setState('warn', 'Cargando…');
+        log("Cargando modelo…");
+        model = await cocoSsd.load();
+        log("Modelo cargado.");
+
+        setState('warn', 'Iniciando cámara…');
+        await startCamera();
+
+        running = true;
+        btnStop.disabled = false;
+        setState('warn', 'Detectando…');
+        log("Detectando…");
+        loop();
+      }catch(e){
+        log("Error: " + (e?.message || e));
+        btnStart.disabled = false;
+        setState('', 'Error');
+      }
+    });
+
+    btnStop.addEventListener('click', stopAll);
+  </script>
+</body>
+</html>
